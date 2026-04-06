@@ -1,0 +1,9 @@
+anndata
+matplotlib
+numpy
+pandas
+scanpy
+scikit_learn
+scipy
+torch
+POT

@@ -1,0 +1,18 @@
+# Data Folder
+data/
+GSE151302/
+input/
+
+# Documents
+docs/
+experiments/
+
+# Unrelated Files
+HISTORY.md
+LICENSE
+README.md
+data.ipynb
+train.ipynb
+
+# Traing out
+results/

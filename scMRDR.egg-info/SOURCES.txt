@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+scMRDR.egg-info/PKG-INFO
+scMRDR.egg-info/SOURCES.txt
+scMRDR.egg-info/dependency_links.txt
+scMRDR.egg-info/requires.txt
+scMRDR.egg-info/top_level.txt

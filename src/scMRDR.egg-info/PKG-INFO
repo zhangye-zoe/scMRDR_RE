@@ -1,0 +1,25 @@
+Metadata-Version: 2.4
+Name: scMRDR
+Version: 1.1.0
+Summary: A package to integrate unpaired multi-omics single-cell data via single-cell Multi-omics Regularized Disentangled Representations.
+Author: Jianle Sun
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GPL-3.0 License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+License-File: LICENSE
+Requires-Dist: anndata
+Requires-Dist: matplotlib
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scanpy
+Requires-Dist: scikit_learn
+Requires-Dist: scipy
+Requires-Dist: torch
+Requires-Dist: POT
+Dynamic: author
+Dynamic: classifier
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

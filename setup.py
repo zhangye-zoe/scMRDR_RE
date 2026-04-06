@@ -6,7 +6,8 @@ setup(
     author="Jianle Sun",
     description="A package to integrate unpaired multi-omics single-cell data via single-cell Multi-omics Regularized Disentangled Representations.",
     # url="https://github.com/sjl-sjtu/perturb_vae", 
-    packages=find_packages(), 
+    packages=find_packages(where="src"),
+    package_dir={"": "src"}, 
     install_requires=[ 
         "anndata",
         "matplotlib",
