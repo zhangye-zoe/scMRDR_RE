@@ -16,10 +16,11 @@ from sklearn.metrics import pairwise_distances
 
 from scMRDR.module2_latent_patched import Integration
 
-BASE_DIR = "/data5/zhangye/scMRDR/scMRDR_zy/PBMC/output_pbmc_multiome"
-SPLIT_ROOT = os.path.join(BASE_DIR, "results_ratio_loop")
-ATAC_GAS_PATH = os.path.join(BASE_DIR, "ATAC_gas.h5ad")
-OUT_ROOT = os.path.join(BASE_DIR, "results_scMRDR_loop")
+INPUT_DIR = "/data5/zhangye/scMRDR/input/PBMC/preprocessed_input"
+OUTPUT_DIR = "/data5/zhangye/scMRDR/output/PBMC"
+SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop")   # produced earlier
+ATAC_GAS_PATH = os.path.join(INPUT_DIR, "ATAC_gas.h5ad")
+OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results")
 
 RATIO_LABELS = [f"single_{x:03d}" for x in [0, 20, 40, 60, 80, 100]]
 SEED = 1234
