@@ -7,7 +7,7 @@ input/
 docs/
 experiments/
 drawing/
-scib_metrics/
+# scib_metrics/
 
 # Unrelated Files
 HISTORY.md

@@ -1,0 +1,8 @@
+{
+  "scMRDR": {
+    "format": "combined_h5ad",
+    "path": "/data5/zhangye/scMRDR/output/BMMC/scMRDR_results_rna_to_atac/{ratio}/training_adata_post.h5ad",
+    "embedding_key": "latent_shared",
+    "modality_key": "modality"
+  }
+}
