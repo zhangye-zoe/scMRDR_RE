@@ -6,6 +6,8 @@ input/
 # Documents
 docs/
 experiments/
+drawing/
+scib_metrics/
 
 # Unrelated Files
 HISTORY.md
@@ -14,6 +16,7 @@ README_off.md
 data.ipynb
 train.ipynb
 scMRDR_ratio_loop_train_eval_latent_patches.py
+scMRDR.egg-info/
 
 # Training Input and Output
 input/

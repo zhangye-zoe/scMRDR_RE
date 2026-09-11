@@ -22,7 +22,7 @@ SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop")   # produced earlier
 ATAC_GAS_PATH = os.path.join(INPUT_DIR, "ATAC_gas.h5ad")
 OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results")
 
-RATIO_LABELS = [f"single_{x:03d}" for x in [0, 20, 40, 60, 80, 100]]
+RATIO_LABELS = [f"single_{x:03d}" for x in [20, 40, 60, 80, 100]]
 SEED = 1234
 
 HIDDEN_LAYERS = [512, 512]
@@ -108,15 +108,27 @@ def build_model_input_for_ratio(split_dir, atac_gas_global):
 
     train_rna_ref = sc.read_h5ad(str(split_dir / "train_rna_ref.h5ad"))
     val_true_rna = sc.read_h5ad(str(split_dir / "val_true_rna.h5ad"))
+
     val_atac_activity = sc.read_h5ad(str(split_dir / "val_atac_activity.h5ad"))
+    train_atac_activity = sc.read_h5ad(str(split_dir / "train_atac_activity.h5ad"))
+    print(
+    train_rna_ref.X.shape,
+    train_atac_activity.X.shape,
+    val_true_rna.X.shape,
+    val_atac_activity.X.shape,
+    # train_atac_full.X.shape,
+    # val_query_atac.X.shape,
+    )
+    print('=' * 100)
 
     with open(split_dir / "split_info.json", "r", encoding="utf-8") as f:
         split_info = json.load(f)
 
-    train_cells = split_info["train_cells"]
+    # train_cells = split_info["train_cells"]
     val_query_atac_cells = split_info["val_query_atac_cells"]
 
-    train_atac_activity = subset_adata_by_cells(atac_gas_global, train_cells)
+    # train_atac_activity = subset_adata_by_cells(atac_gas_global, train_cells)
+    
 
     common_features = get_common_names(
         train_rna_ref.var_names.tolist(),
