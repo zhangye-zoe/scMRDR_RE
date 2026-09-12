@@ -6,7 +6,6 @@
 
 This repository contains adapted code for reproducing [**scMRDR**](https://github.com/sjl-sjtu/scMRDR) on the **PBMC** and **BMMC** multi-omics datasets, covering data preparation, model training, cross-omics prediction, and latent-space visualization.
 
----
 
 ## 1. 🚀 Installation
 
