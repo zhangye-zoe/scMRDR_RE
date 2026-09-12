@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
 
-from scMRDR.module2_latent_patched import Integration
+from scMRDR.integration_repro import Integration
 
 # INPUT_DIR = "/data5/zhangye/scMRDR/input/PBMC/preprocessed_input"
 # OUTPUT_DIR = "/data5/zhangye/scMRDR/output/PBMC"
