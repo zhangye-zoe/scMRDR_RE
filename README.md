@@ -6,7 +6,6 @@
 
 This repository contains adapted code for reproducing [**scMRDR**](https://github.com/sjl-sjtu/scMRDR) on the **PBMC** and **BMMC** multi-omics datasets, including data preparation, model training, cross-omics prediction, and latent-space visualization.
 
----
 
 ## 1. 🚀 Installation
 
@@ -19,7 +18,6 @@ pip install -e .
 
 For the original scMRDR environment and API examples, please refer to the [official repository](https://github.com/sjl-sjtu/scMRDR).
 
----
 
 ## 2. 📊 Data Preparation
 
@@ -33,7 +31,7 @@ The training splits are generated with the following notebooks:
 
 PBMC cell-type annotations used for UMAP visualization were generated with [**Azimuth**](https://github.com/zhangye-zoe/Azimuth).
 
----
+
 
 ## 3. 🧠 Model Training
 
@@ -58,19 +56,17 @@ Each script automatically evaluates the configured partial-pairing ratios and sa
 
 > **Note:** Update `INPUT_DIR`, `SPLIT_ROOT`, and `OUTPUT_DIR` / `OUT_ROOT` in the training scripts if your local directory structure is different.
 
----
 
 ## 4. 🎨 Visualization
 
 Aligned UMAPs of the learned shared latent space can be reproduced with:
 
 ```text
-notebooks/visualization/aligned_umap.ipynb
+notebooks/aligned_umap.ipynb
 ```
 
 The notebook visualizes `adata.obsm["latent_shared"]` by **modality** and **cell type**, and supports the external PBMC Azimuth annotations.
 
----
 
 ## 5. 📈 PBMC Reproduction Results
 
@@ -96,7 +92,6 @@ Therefore, for example, `single_100` corresponds to **0% paired data**, while `s
 | 80% | 45.03 | 69.70 | 50.90 | 0.685 |
 | 100% | 44.19 | 77.30 | 53.02 | 0.739 |
 
----
 
 ## 6. 📖 Citation
 
