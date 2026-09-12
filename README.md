@@ -19,7 +19,6 @@ pip install -e .
 
 For the original scMRDR environment and API examples, please refer to the [official repository](https://github.com/sjl-sjtu/scMRDR).
 
----
 
 ## 2. 📊 Data Preparation
 
@@ -33,7 +32,6 @@ The reproduction contains three dataset/task settings:
 
 PBMC cell-type annotations used for UMAP visualization were generated with [**Azimuth**](https://github.com/zhangye-zoe/Azimuth). BMMC cell-type annotations are read directly from the dataset.
 
----
 
 ## 3. 🧠 Model Training
 
@@ -54,7 +52,6 @@ Each script evaluates all configured partial-pairing ratios and saves the learne
 
 > **Note:** Update `INPUT_DIR`, `SPLIT_ROOT`, and `OUTPUT_DIR` / `OUT_ROOT` in the training scripts if your local directory structure is different.
 
----
 
 ## 4. 🎨 Visualization
 
@@ -63,12 +60,11 @@ Aligned UMAPs of `adata.obsm["latent_shared"]` can be reproduced with:
 | Dataset / Task | Visualization |
 | --- | --- |
 | PBMC RNA–ATAC | [`notebooks/pbmc_atac_rna_umap.ipynb`](notebooks/pbmc_atac_rna_umap.ipynb) |
-| BMMC RNA–ATAC | [`notebooks/visualization/bmmc_rna_atac_umap.ipynb`](notebooks/visualization/bmmc_rna_atac_umap.ipynb) |
-| BMMC RNA–Protein | [`notebooks/visualization/bmmc_rna_protein_umap.ipynb`](notebooks/visualization/bmmc_rna_protein_umap.ipynb) |
+| BMMC RNA–ATAC | [`notebooks/bmmc_rna_atac_umap.ipynb`](notebooks/bmmc_rna_atac_umap.ipynb) |
+| BMMC RNA–Protein | [`notebooks/bmmc_rna_protein_umap.ipynb`](notebooks/bmmc_rna_protein_umap.ipynb) |
 
 The UMAPs are colored by **modality** and **cell type**.
 
----
 
 ## 5. 📈 Reproduction Results
 
@@ -132,7 +128,6 @@ Thus, `single_100` corresponds to **0% paired data**, while `single_000` corresp
 
 > **Note:** Metric magnitudes should primarily be compared within the same dataset/task setting because RNA–ATAC and RNA–Protein use different feature spaces and value scales.
 
----
 
 ## 6. 📖 Citation
 
