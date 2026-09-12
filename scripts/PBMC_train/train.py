@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
 
-from scMRDR.module2_latent_patched import Integration
+from scMRDR.integration_repro import Integration
 
 INPUT_DIR = "/data5/zhangye/scMRDR/input/PBMC/preprocessed_input"
 OUTPUT_DIR = "/data5/zhangye/scMRDR/output/PBMC"
@@ -22,7 +22,7 @@ SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop")   # produced earlier
 ATAC_GAS_PATH = os.path.join(INPUT_DIR, "ATAC_gas.h5ad")
 OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results")
 
-RATIO_LABELS = [f"single_{x:03d}" for x in [20, 40, 60, 80, 100]]
+RATIO_LABELS = [f"single_{x:03d}" for x in [00, 20, 40, 60, 80, 100]]
 SEED = 1234
 
 HIDDEN_LAYERS = [512, 512]

@@ -26,7 +26,7 @@ INPUT_DIR = "/data5/zhangye/scMRDR/input/BMMC/preprocessed_input/RNA_ATAC"
 OUTPUT_DIR = "/data5/zhangye/scMRDR/output/BMMC"
 SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop_rna_atac")
 ATAC_GAS_PATH = os.path.join(INPUT_DIR, "ATAC_gas.h5ad")
-OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results_rna_to_atac")
+OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results_atac_to_rna")
 
 
 RATIO_LABELS = [f"single_{x:03d}" for x in [00, 20, 40, 60, 80, 100]]

@@ -14,30 +14,41 @@ from scipy import sparse
 from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
 
-from scMRDR.module2_latent_patched import Integration
+from scMRDR.integration_repro import Integration
 
 # =========================================================
 # RNA -> Protein scMRDR training / evaluation script
 # ---------------------------------------------------------
-# Expected split files from the RNA->Protein preparation step:
-#   results_ratio_loop_rna_to_protein/single_xxx/
-#       train_rna_paired.h5ad
-#       train_protein_paired.h5ad
-#       train_rna_only.h5ad                (optional, can be empty / missing)
-#       train_protein_only.h5ad            (optional, can be empty / missing)
-#       val_rna_query.h5ad
-#       val_true_protein.h5ad
+# This version matches the CURRENT BMMC RNA-Protein split structure:
+#
+#   results_ratio_loop_rna_protein/single_xxx/
+#       train_rna_ref.h5ad
+#       train_protein_ref.h5ad
+#       train_protein_full.h5ad      # not used for training; contains hidden truth
+#       val_query_protein.h5ad       # not used for RNA->Protein prediction
+#       val_true_rna.h5ad            # used as the RNA query
+#       val_true_protein.h5ad        # used as the Protein target
 #       split_info.json
 #
+# Interpretation of the reference training files:
+# - train_rna_ref      = paired cells + RNA-only cells
+# - train_protein_ref  = paired cells + Protein-only cells
+# - paired cells are inferred from the intersection of their obs_names
+# - RNA-only / Protein-only cells are inferred from the set differences
+#
 # Important:
-# - This script works on the overlap between RNA genes and protein markers
-#   after protein markers have been mapped to gene symbols.
-# - Therefore, prediction targets are the overlapping mapped protein features.
+# - train_protein_full.h5ad is deliberately NOT used because it contains
+#   Protein measurements for all training cells, including cells intended
+#   to be RNA-only. Using it would leak the missing target modality.
+# - val_query_protein.h5ad is deliberately NOT used for RNA->Protein
+#   prediction. val_true_rna.h5ad is used as the query and
+#   val_true_protein.h5ad as the ground-truth target.
+# - RNA and Protein are aligned to their common mapped feature names.
 # =========================================================
 
-INPUT_DIR = "/data5/zhangye/scMRDR/input/BMMC/preprocessed_input/RNA_Protein"
+INPUT_DIR = "/data5/zhangye/scMRDR/input/BMMC/preprocessed_input/RNA_PROTEIN"
 OUTPUT_DIR = "/data5/zhangye/scMRDR/output/BMMC"
-SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop_rna_to_protein")
+SPLIT_ROOT = os.path.join(INPUT_DIR, "results_ratio_loop_rna_protein")
 OUT_ROOT = os.path.join(OUTPUT_DIR, "scMRDR_results_rna_to_protein")
 
 RATIO_LABELS = [f"single_{x:03d}" for x in [0, 20, 40, 60, 80, 100]]
@@ -155,73 +166,140 @@ def ensure_batch_column(adata: ad.AnnData, value: str = "batch0") -> ad.AnnData:
 
 
 def build_model_input_for_ratio(split_dir):
+    """
+    Build scMRDR input from the CURRENT RNA-Protein split format.
+
+    Current files encode partial pairing implicitly:
+      - train_rna_ref contains paired + RNA-only cells
+      - train_protein_ref contains paired + Protein-only cells
+
+    The paired / single-modality groups are recovered from cell-ID overlap.
+    """
     split_dir = Path(split_dir)
 
-    train_rna_paired = sc.read_h5ad(str(split_dir / "train_rna_paired.h5ad"))
-    train_protein_paired = sc.read_h5ad(str(split_dir / "train_protein_paired.h5ad"))
-    val_rna_query = sc.read_h5ad(str(split_dir / "val_rna_query.h5ad"))
-    val_true_protein = sc.read_h5ad(str(split_dir / "val_true_protein.h5ad"))
+    # ---------------------------------------------------------
+    # Current training/reference files
+    # ---------------------------------------------------------
+    train_rna_ref = sc.read_h5ad(str(split_dir / "train_rna_ref.h5ad"))
+    train_protein_ref = sc.read_h5ad(str(split_dir / "train_protein_ref.h5ad"))
 
-    train_rna_only = maybe_read_h5ad(split_dir / "train_rna_only.h5ad")
-    train_protein_only = maybe_read_h5ad(split_dir / "train_protein_only.h5ad")
+    # For RNA -> Protein evaluation, use RNA as query and Protein as truth.
+    val_rna_query = sc.read_h5ad(str(split_dir / "val_true_rna.h5ad"))
+    val_true_protein = sc.read_h5ad(str(split_dir / "val_true_protein.h5ad"))
 
     with open(split_dir / "split_info.json", "r", encoding="utf-8") as f:
         split_info = json.load(f)
 
-    common_feature_inputs = [
-        train_rna_paired.var_names.tolist(),
-        train_protein_paired.var_names.tolist(),
-        val_rna_query.var_names.tolist(),
-        val_true_protein.var_names.tolist(),
-    ]
-    if train_rna_only is not None and train_rna_only.n_obs > 0:
-        common_feature_inputs.append(train_rna_only.var_names.tolist())
-    if train_protein_only is not None and train_protein_only.n_obs > 0:
-        common_feature_inputs.append(train_protein_only.var_names.tolist())
+    # ---------------------------------------------------------
+    # Infer paired / RNA-only / Protein-only training cells
+    # from the two reference files.
+    # ---------------------------------------------------------
+    rna_cells = set(train_rna_ref.obs_names.astype(str))
+    protein_cells = set(train_protein_ref.obs_names.astype(str))
 
-    common_features = get_common_names(*common_feature_inputs)
-    if len(common_features) < MIN_COMMON_FEATURES:
-        raise ValueError(
-            f"Too few common RNA/protein features in {split_dir.name}: {len(common_features)}. "
-            "Check protein gene-symbol mapping and overlap."
+    train_paired_cells = sorted(rna_cells & protein_cells)
+    train_rna_only_cells = sorted(rna_cells - protein_cells)
+    train_protein_only_cells = sorted(protein_cells - rna_cells)
+
+    train_stats = {
+        "train_paired": len(train_paired_cells),
+        "train_rna_only": len(train_rna_only_cells),
+        "train_protein_only": len(train_protein_only_cells),
+    }
+
+    print(
+        "Training availability inferred from reference files: "
+        f"paired={train_stats['train_paired']}, "
+        f"RNA-only={train_stats['train_rna_only']}, "
+        f"Protein-only={train_stats['train_protein_only']}"
+    )
+
+    # Optional consistency check against split_info.json.
+    expected_paired = set(map(str, split_info.get("train_paired_cells", [])))
+    expected_rna_only = set(map(str, split_info.get("train_rna_only_cells", [])))
+    expected_protein_only = set(map(str, split_info.get("train_protein_only_cells", [])))
+
+    if expected_paired and expected_paired != set(train_paired_cells):
+        warnings.warn(
+            f"{split_dir.name}: paired cells inferred from train_*_ref do not "
+            "exactly match split_info.json."
+        )
+    if expected_rna_only and expected_rna_only != set(train_rna_only_cells):
+        warnings.warn(
+            f"{split_dir.name}: RNA-only cells inferred from train_*_ref do not "
+            "exactly match split_info.json."
+        )
+    if expected_protein_only and expected_protein_only != set(train_protein_only_cells):
+        warnings.warn(
+            f"{split_dir.name}: Protein-only cells inferred from train_*_ref do not "
+            "exactly match split_info.json."
         )
 
-    train_rna_paired = train_rna_paired[:, common_features].copy()
-    train_protein_paired = train_protein_paired[:, common_features].copy()
+    # ---------------------------------------------------------
+    # Align validation RNA and Protein by cell ID.
+    # ---------------------------------------------------------
+    val_rna_cells = set(val_rna_query.obs_names.astype(str))
+    val_protein_cells = set(val_true_protein.obs_names.astype(str))
+    common_val_cells = sorted(val_rna_cells & val_protein_cells)
+
+    if len(common_val_cells) == 0:
+        raise ValueError(
+            f"No common validation cells between val_true_rna.h5ad and "
+            f"val_true_protein.h5ad in {split_dir.name}."
+        )
+
+    if len(common_val_cells) != val_rna_query.n_obs or len(common_val_cells) != val_true_protein.n_obs:
+        warnings.warn(
+            f"{split_dir.name}: validation RNA/Protein cell sets are not identical. "
+            f"Using their intersection ({len(common_val_cells)} cells)."
+        )
+
+    val_rna_query = val_rna_query[common_val_cells].copy()
+    val_true_protein = val_true_protein[common_val_cells].copy()
+
+    # ---------------------------------------------------------
+    # scMRDR input uses the common mapped feature space.
+    # ---------------------------------------------------------
+    common_features = get_common_names(
+        train_rna_ref.var_names.tolist(),
+        train_protein_ref.var_names.tolist(),
+        val_rna_query.var_names.tolist(),
+        val_true_protein.var_names.tolist(),
+    )
+
+    if len(common_features) < MIN_COMMON_FEATURES:
+        raise ValueError(
+            f"Too few common RNA/protein features in {split_dir.name}: "
+            f"{len(common_features)}. Check protein gene-symbol mapping and overlap."
+        )
+
+    train_rna_ref = train_rna_ref[:, common_features].copy()
+    train_protein_ref = train_protein_ref[:, common_features].copy()
     val_rna_query = val_rna_query[:, common_features].copy()
     val_true_protein = val_true_protein[:, common_features].copy()
 
-    if train_rna_only is not None and train_rna_only.n_obs > 0:
-        train_rna_only = train_rna_only[:, common_features].copy()
-    if train_protein_only is not None and train_protein_only.n_obs > 0:
-        train_protein_only = train_protein_only[:, common_features].copy()
-
-    train_rna_paired.obs["modality"] = "rna"
-    train_protein_paired.obs["modality"] = "protein"
+    # ---------------------------------------------------------
+    # Mark modality and prepare the layer expected by Integration.
+    # ---------------------------------------------------------
+    train_rna_ref.obs["modality"] = "rna"
+    train_protein_ref.obs["modality"] = "protein"
     val_rna_query.obs["modality"] = "rna"
 
-    train_rna_paired = ensure_batch_column(prepare_count_layer(train_rna_paired))
-    train_protein_paired = ensure_batch_column(prepare_count_layer(train_protein_paired))
+    train_rna_ref = ensure_batch_column(prepare_count_layer(train_rna_ref))
+    train_protein_ref = ensure_batch_column(prepare_count_layer(train_protein_ref))
     val_rna_query = ensure_batch_column(prepare_count_layer(val_rna_query))
     val_true_protein = ensure_batch_column(val_true_protein)
 
+    # IMPORTANT:
+    # - Do not add train_protein_full: it exposes Protein truth for RNA-only train cells.
+    # - Do not add val_query_protein: this is target-side data for this RNA->Protein task.
     blocks = {
-        "train_rna_paired": train_rna_paired.copy(),
-        "train_protein_paired": train_protein_paired.copy(),
+        "train_rna_ref": train_rna_ref,
+        "train_protein_ref": train_protein_ref,
     }
 
-    if train_rna_only is not None and train_rna_only.n_obs > 0:
-        train_rna_only.obs["modality"] = "rna"
-        train_rna_only = ensure_batch_column(prepare_count_layer(train_rna_only))
-        blocks["train_rna_only"] = train_rna_only.copy()
-
-    if train_protein_only is not None and train_protein_only.n_obs > 0:
-        train_protein_only.obs["modality"] = "protein"
-        train_protein_only = ensure_batch_column(prepare_count_layer(train_protein_only))
-        blocks["train_protein_only"] = train_protein_only.copy()
-
     if INCLUDE_VAL_QUERY_RNA_IN_MODEL_ADATA:
-        blocks["val_rna_query"] = val_rna_query.copy()
+        blocks["val_rna_query"] = val_rna_query
 
     adata_model = ad.concat(
         blocks,
@@ -234,9 +312,18 @@ def build_model_input_for_ratio(split_dir):
     if "count" not in adata_model.layers:
         raise ValueError("Concatenated scMRDR input is missing layer 'count'.")
 
-    adata_model.obs["is_val_query"] = adata_model.obs_names.isin(val_rna_query.obs_names)
+    adata_model.obs["is_val_query"] = (
+        adata_model.obs["dataset_block"].astype(str) == "val_rna_query"
+    )
 
-    return adata_model, val_true_protein, split_info, common_features
+    return (
+        adata_model,
+        val_rna_query,
+        val_true_protein,
+        split_info,
+        common_features,
+        train_stats,
+    )
 
 
 def train_scmrdr_for_ratio(adata_model):
@@ -406,17 +493,30 @@ def main():
         print("============================")
 
         try:
-            adata_model, true_protein_val, split_info, common_features = build_model_input_for_ratio(split_dir)
+            adata_model, true_rna_val, true_protein_val, split_info, common_features, train_stats = build_model_input_for_ratio(split_dir)
             save_h5ad_safe(adata_model, outdir / "training_adata_input.h5ad")
 
             model, adata_post, pred_protein_all = train_scmrdr_for_ratio(adata_model)
             save_h5ad_safe(adata_post, outdir / "training_adata_post.h5ad")
             save_h5ad_safe(pred_protein_all, outdir / "pred_protein_all_nonprotein.h5ad")
 
-            val_cells = split_info.get("val_query_cells", split_info.get("val_rna_query_cells", []))
-            pred_protein_val = pred_protein_all[[c for c in val_cells if c in pred_protein_all.obs_names]].copy()
+            # Use the RNA cells in val_true_rna.h5ad as the query set.
+            val_cells = true_rna_val.obs_names.astype(str).tolist()
+            available_val_cells = [c for c in val_cells if c in pred_protein_all.obs_names]
+
+            if len(available_val_cells) != len(val_cells):
+                missing = sorted(set(val_cells) - set(available_val_cells))
+                raise ValueError(
+                    f"Predicted Protein is missing {len(missing)} validation RNA cells. "
+                    f"Examples: {missing[:5]}"
+                )
+
+            pred_protein_val = pred_protein_all[available_val_cells].copy()
+            true_rna_val = true_rna_val[available_val_cells].copy()
+            true_protein_val = true_protein_val[available_val_cells].copy()
 
             save_h5ad_safe(pred_protein_val, outdir / "pred_protein_val.h5ad")
+            save_h5ad_safe(true_rna_val, outdir / "true_rna_val.h5ad")
             save_h5ad_safe(true_protein_val, outdir / "true_protein_val.h5ad")
 
             t2_metrics, pred_mat, true_mat, common_cells, common_features_eval = evaluate_t2(
@@ -442,9 +542,9 @@ def main():
             all_summary.append({
                 "ratio_label": ratio_label,
                 "single_frac": split_info["single_frac"],
-                "train_paired": len(split_info.get("train_paired_cells", [])),
-                "train_rna_only": len(split_info.get("train_rna_only_cells", [])),
-                "train_protein_only": len(split_info.get("train_protein_only_cells", [])),
+                "train_paired": train_stats["train_paired"],
+                "train_rna_only": train_stats["train_rna_only"],
+                "train_protein_only": train_stats["train_protein_only"],
                 "val_paired": len(split_info.get("val_paired_cells", [])),
                 "val_rna_only": len(split_info.get("val_rna_only_cells", [])),
                 "val_protein_only": len(split_info.get("val_protein_only_cells", [])),

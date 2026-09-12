@@ -1,23 +1,79 @@
-# Data Folder
+# ============================================================
+# Data
+# ============================================================
+
+# Raw / external datasets
 data/
 GSE151302/
-input/
 
-# Documents
+# Keep the input directory structure, but ignore data files.
+# Git does not track empty directories, so place a .gitkeep
+# file in each input subdirectory that should be preserved.
+input/**
+!input/**/
+!input/**/.gitkeep
+
+
+# ============================================================
+# Training outputs
+# ============================================================
+
+output/
+results/
+
+
+# ============================================================
+# Generated / auxiliary project files
+# ============================================================
+
 docs/
 experiments/
 drawing/
-# scib_metrics/
 
-# Unrelated Files
+
+# ============================================================
+# Legacy / unused files
+# ============================================================
+
 HISTORY.md
-LICENSE
 README_off.md
 data.ipynb
 train.ipynb
 scMRDR_ratio_loop_train_eval_latent_patches.py
-scMRDR.egg-info/
 
-# Training Input and Output
-input/
-output/
+
+# ============================================================
+# Python build artifacts
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+
+# ============================================================
+# Jupyter
+# ============================================================
+
+.ipynb_checkpoints/
+
+
+# ============================================================
+# IDE / operating-system files
+# ============================================================
+
+.DS_Store
+.vscode/
+.idea/
+
+
+# ============================================================
+# Local environments
+# ============================================================
+
+.env
+.venv/
+venv/
+env/
